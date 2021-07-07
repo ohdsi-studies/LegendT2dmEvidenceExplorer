@@ -1,27 +1,42 @@
 library(shiny)
 library(DT)
 
-mainColumns <- c("description", 
-                 "databaseId", 
-                 "rr", 
+mainColumns <- c("description",
+                 "databaseId",
+                 "rr",
                  "ci95Lb",
                  "ci95Ub",
                  "p",
-                 "calibratedRr", 
+                 "calibratedRr",
                  "calibratedCi95Lb",
                  "calibratedCi95Ub",
                  "calibratedP")
 
-mainColumnNames <- c("<span title=\"Analysis\">Analysis</span>", 
-                     "<span title=\"Data source\">Data source</span>", 
+mainColumnNames <- c("<span title=\"Analysis\">Analysis</span>",
+                     "<span title=\"Data source\">Data source</span>",
                      "<span title=\"Hazard ratio (uncalibrated)\">HR</span>",
                      "<span title=\"Lower bound of the 95 percent confidence interval (uncalibrated)\">LB</span>",
-                     "<span title=\"Upper bound of the 95 percent confidence interval (uncalibrated)\">UB</span>", 
-                     "<span title=\"Two-sided p-value (uncalibrated)\">P</span>", 
+                     "<span title=\"Upper bound of the 95 percent confidence interval (uncalibrated)\">UB</span>",
+                     "<span title=\"Two-sided p-value (uncalibrated)\">P</span>",
                      "<span title=\"Hazard ratio (calibrated)\">Cal.HR</span>",
                      "<span title=\"Lower bound of the 95 percent confidence interval (calibrated)\">Cal.LB</span>",
-                     "<span title=\"Upper bound of the 95 percent confidence interval (calibrated)\">Cal.UB</span>", 
+                     "<span title=\"Upper bound of the 95 percent confidence interval (calibrated)\">Cal.UB</span>",
                      "<span title=\"Two-sided p-value (calibrated)\">Cal.P</span>")
+
+showTermsOfUseModal <- function() {
+  showModal(
+    modalDialog(
+      title="Terms of Use",
+      includeMarkdown("md/terms_of_use.md"),
+      footer = tagList(
+        actionButton("termsOfUseReject", "Reject", style="color: white", class="btn-danger"),
+        actionButton("termsOfUseAccept", "Accept", style="color: white", class="btn-success")
+      )
+    )
+  )
+}
+
+TERMS_OF_USE_ACCEPTED <- "accepted"
 
 shinyServer(function(input, output, session) {
   if (blind) {
@@ -30,8 +45,15 @@ shinyServer(function(input, output, session) {
   if (!exists("cmInteractionResult")) {
     hideTab(inputId = "detailsTabsetPanel", target = "Subgroups")
   }
-  
+
   observe({
+
+    # if (!is.null(input$jscookie)) {
+      # if (input$jscookie != TERMS_OF_USE_ACCEPTED) {
+        showTermsOfUseModal()
+      # }
+    # }
+
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
     tcoSubset <- tcos[tcos$targetId == targetId & tcos$comparatorId == comparatorId, ]
@@ -40,7 +62,17 @@ shinyServer(function(input, output, session) {
                       inputId = "outcome",
                       choices = unique(outcomes))
   })
-  
+
+  observeEvent(input$termsOfUseReject, {
+    session$sendCustomMessage("alert", "You must accept the terms of use to use the application.")
+  })
+
+  observeEvent(input$termsOfUseAccept, {
+    writeLines("Set cookie")
+    session$sendCustomMessage("setCookie", TERMS_OF_USE_ACCEPTED)
+    removeModal()
+  })
+
   resultSubset <- reactive({
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
@@ -96,7 +128,7 @@ shinyServer(function(input, output, session) {
     return(!is.null(selectedRow()))
   })
   outputOptions(output, "rowIsSelected", suspendWhenHidden = FALSE)
-  
+
   balance <- reactive({
      row <- selectedRow()
      if (is.null(row)) {
@@ -114,7 +146,7 @@ shinyServer(function(input, output, session) {
        return(balance)
      }
   })
-  
+
   output$isMetaAnalysis <- reactive({
     row <- selectedRow()
     isMetaAnalysis <- !is.null(row) && (row$databaseId %in% metaAnalysisDbIds)
@@ -167,7 +199,7 @@ shinyServer(function(input, output, session) {
                        class = "stripe nowrap compact")
     return(table)
   })
-  
+
   output$powerTableCaption <- renderUI({
     row <- selectedRow()
     if (!is.null(row)) {
@@ -195,7 +227,7 @@ shinyServer(function(input, output, session) {
         table <- preparePowerTable(results, cohortMethodAnalysis, includeDatabaseId = TRUE)
         table$description <- NULL
         table$databaseId[table$databaseId %in% metaAnalysisDbIds] <- "Summary"
-        colnames(table) <- c("Source", 
+        colnames(table) <- c("Source",
                              "Target subjects",
                              "Comparator subjects",
                              "Target years",
@@ -271,23 +303,23 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$attritionPlot <- renderPlot({
     return(attritionPlot())
   })
-  
-  output$downloadAttritionPlotPng <- downloadHandler(filename = "Attrition.png", 
-                                                     contentType = "image/png", 
+
+  output$downloadAttritionPlotPng <- downloadHandler(filename = "Attrition.png",
+                                                     contentType = "image/png",
                                                      content = function(file) {
     ggplot2::ggsave(file, plot = attritionPlot(), width = 6, height = 7, dpi = 400)
   })
 
-  output$downloadAttritionPlotPdf <- downloadHandler(filename = "Attrition.pdf", 
-                                                     contentType = "application/pdf", 
+  output$downloadAttritionPlotPdf <- downloadHandler(filename = "Attrition.pdf",
+                                                     contentType = "application/pdf",
                                                      content = function(file) {
     ggplot2::ggsave(file = file, plot = attritionPlot(), width = 6, height = 7)
   })
-  
+
   output$attritionPlotCaption <- renderUI({
     row <- selectedRow()
     if (is.null(row)) {
@@ -354,7 +386,7 @@ shinyServer(function(input, output, session) {
       return(table1)
     }
   })
-  
+
   output$propensityModelTable <- renderDataTable({
     row <- selectedRow()
     if (is.null(row)) {
@@ -367,7 +399,7 @@ shinyServer(function(input, output, session) {
                                   comparatorId = comparatorId,
                                   databaseId = row$databaseId,
                                   analysisId = row$analysisId)
-      
+
       table <- preparePropensityModelTable(model)
       options = list(columnDefs = list(list(className = 'dt-right',  targets = 0)),
                      pageLength = 15,
@@ -410,19 +442,19 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$psDistPlot <- renderPlot({
     return(psDistPlot())
   })
-  
-  output$downloadPsDistPlotPng <- downloadHandler(filename = "Ps.png", 
-                                                  contentType = "image/png", 
+
+  output$downloadPsDistPlotPng <- downloadHandler(filename = "Ps.png",
+                                                  contentType = "image/png",
                                                   content = function(file) {
                                                     ggplot2::ggsave(file, plot = psDistPlot(), width = 5, height = 3.5, dpi = 400)
                                                   })
-  
-  output$downloadPsDistPlotPdf <- downloadHandler(filename = "Ps.pdf", 
-                                                  contentType = "application/pdf", 
+
+  output$downloadPsDistPlotPdf <- downloadHandler(filename = "Ps.pdf",
+                                                  contentType = "application/pdf",
                                                   content = function(file) {
                                                     ggplot2::ggsave(file = file, plot = psDistPlot(), width = 5, height = 3.5)
                                                   })
@@ -439,23 +471,23 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$balancePlot <- renderPlot({
     return(balancePlot())
   })
-  
-  output$downloadBalancePlotPng <- downloadHandler(filename = "Balance.png", 
-                                                  contentType = "image/png", 
+
+  output$downloadBalancePlotPng <- downloadHandler(filename = "Balance.png",
+                                                  contentType = "image/png",
                                                   content = function(file) {
                                                     ggplot2::ggsave(file, plot = balancePlot(), width = 4, height = 4, dpi = 400)
                                                   })
-  
-  output$downloadBalancePlotPdf <- downloadHandler(filename = "Balance.pdf", 
-                                                  contentType = "application/pdf", 
+
+  output$downloadBalancePlotPdf <- downloadHandler(filename = "Balance.pdf",
+                                                  contentType = "application/pdf",
                                                   content = function(file) {
                                                     ggplot2::ggsave(file = file, plot = balancePlot(), width = 4, height = 4)
                                                   })
-  
+
   output$balancePlotCaption <- renderUI({
     bal <- balance()
     if (is.null(bal) || nrow(bal) == 0) {
@@ -503,7 +535,7 @@ shinyServer(function(input, output, session) {
       )
     }
   })
-  
+
   balanceSummaryPlot <- reactive({
     row <- selectedRow()
     if (is.null(row) || !(row$databaseId %in% metaAnalysisDbIds)) {
@@ -518,15 +550,15 @@ shinyServer(function(input, output, session) {
       plot <- plotCovariateBalanceSummary(balanceSummary,
                                           threshold = 0.1,
                                           beforeLabel = paste("Before", row$psStrategy),
-                                          afterLabel = paste("After", row$psStrategy)) 
+                                          afterLabel = paste("After", row$psStrategy))
       return(plot)
     }
   })
-  
+
   output$balanceSummaryPlot <- renderPlot({
     balanceSummaryPlot()
   }, res = 100)
-  
+
   output$balanceSummaryPlotCaption <- renderUI({
     row <- selectedRow()
     if (is.null(row)) {
@@ -534,25 +566,25 @@ shinyServer(function(input, output, session) {
     } else {
       text <- "<strong>Figure 7.</strong> Covariate balance before and after %s. The y axis represents
       the standardized difference of mean before and after %s on the propensity
-      score. The whiskers show the minimum and maximum values across covariates. The box represents the 
+      score. The whiskers show the minimum and maximum values across covariates. The box represents the
       interquartile range, and the middle line represents the median. The dashed lines indicate a standardized
       difference of 0.1."
       return(HTML(sprintf(text, row$psStrategy, row$psStrategy)))
     }
   })
-  
-  output$downloadBalanceSummaryPlotPng <- downloadHandler(filename = "BalanceSummary.png", 
-                                                           contentType = "image/png", 
+
+  output$downloadBalanceSummaryPlotPng <- downloadHandler(filename = "BalanceSummary.png",
+                                                           contentType = "image/png",
                                                            content = function(file) {
                                                              ggplot2::ggsave(file, plot = balanceSummaryPlot(), width = 12, height = 5.5, dpi = 400)
                                                            })
-  
-  output$downloadBalanceSummaryPlotPdf <- downloadHandler(filename = "BalanceSummary.pdf", 
-                                                           contentType = "application/pdf", 
+
+  output$downloadBalanceSummaryPlotPdf <- downloadHandler(filename = "BalanceSummary.pdf",
+                                                           contentType = "application/pdf",
                                                            content = function(file) {
                                                              ggplot2::ggsave(file = file, plot = balanceSummaryPlot(), width = 12, height = 5.5)
                                                            })
-  
+
   systematicErrorPlot <- reactive({
     row <- selectedRow()
     if (is.null(row)) {
@@ -570,23 +602,23 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$systematicErrorPlot <- renderPlot({
     return(systematicErrorPlot())
   })
-  
-  output$downloadSystematicErrorPlotPng <- downloadHandler(filename = "SystematicError.png", 
-                                                   contentType = "image/png", 
+
+  output$downloadSystematicErrorPlotPng <- downloadHandler(filename = "SystematicError.png",
+                                                   contentType = "image/png",
                                                    content = function(file) {
                                                      ggplot2::ggsave(file, plot = systematicErrorPlot(), width = 12, height = 5.5, dpi = 400)
                                                    })
-  
-  output$downloadSystematicErrorPlotPdf <- downloadHandler(filename = "SystematicError.pdf", 
-                                                   contentType = "application/pdf", 
+
+  output$downloadSystematicErrorPlotPdf <- downloadHandler(filename = "SystematicError.pdf",
+                                                   contentType = "application/pdf",
                                                    content = function(file) {
                                                      ggplot2::ggsave(file = file, plot = systematicErrorPlot(), width = 12, height = 5.5)
                                                    })
-  
+
   systematicErrorSummaryPlot <- reactive({
     row <- selectedRow()
     if (is.null(row) || !(row$databaseId %in% metaAnalysisDbIds)) {
@@ -598,24 +630,24 @@ shinyServer(function(input, output, session) {
                                                       analysisId =  row$analysisId)
       if (is.null(negativeControls))
         return(NULL)
-      
-      plot <- plotEmpiricalNulls(negativeControls) 
+
+      plot <- plotEmpiricalNulls(negativeControls)
       return(plot)
     }
   })
-  
+
   output$systematicErrorSummaryPlot <- renderPlot({
     return(systematicErrorSummaryPlot())
   }, res = 100)
-  
-  output$downloadSystematicErrorSummaryPlotPng <- downloadHandler(filename = "SystematicErrorSummary.png", 
-                                                           contentType = "image/png", 
+
+  output$downloadSystematicErrorSummaryPlotPng <- downloadHandler(filename = "SystematicErrorSummary.png",
+                                                           contentType = "image/png",
                                                            content = function(file) {
                                                              ggplot2::ggsave(file, plot = systematicErrorSummaryPlot(), width = 12, height = 5.5, dpi = 400)
                                                            })
-  
-  output$downloadSystematicErrorSummaryPlotPdf <- downloadHandler(filename = "SystematicErrorSummary.pdf", 
-                                                           contentType = "application/pdf", 
+
+  output$downloadSystematicErrorSummaryPlotPdf <- downloadHandler(filename = "SystematicErrorSummary.pdf",
+                                                           contentType = "application/pdf",
                                                            content = function(file) {
                                                              ggplot2::ggsave(file = file, plot = systematicErrorSummaryPlot(), width = 12, height = 5.5)
                                                            })
@@ -640,23 +672,23 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$kaplanMeierPlot <- renderPlot({
     return(kaplanMeierPlot())
   }, res = 100)
-  
-  output$downloadKaplanMeierPlotPng <- downloadHandler(filename = "KaplanMeier.png", 
-                                                   contentType = "image/png", 
+
+  output$downloadKaplanMeierPlotPng <- downloadHandler(filename = "KaplanMeier.png",
+                                                   contentType = "image/png",
                                                    content = function(file) {
                                                      ggplot2::ggsave(file, plot = kaplanMeierPlot(), width = 7, height = 5, dpi = 400)
                                                    })
-  
-  output$downloadKaplanMeierPlotPdf <- downloadHandler(filename = "KaplanMeier.pdf", 
-                                                   contentType = "application/pdf", 
+
+  output$downloadKaplanMeierPlotPdf <- downloadHandler(filename = "KaplanMeier.pdf",
+                                                   contentType = "application/pdf",
                                                    content = function(file) {
                                                      ggplot2::ggsave(file = file, plot = kaplanMeierPlot(), width = 7, height = 5)
                                                    })
-  
+
   output$kaplanMeierPlotPlotCaption <- renderUI({
     row <- selectedRow()
     if (is.null(row)) {
@@ -670,8 +702,8 @@ shinyServer(function(input, output, session) {
       return(HTML(sprintf(text, input$target, input$comparator)))
     }
   })
-  
-  
+
+
   forestPlot <- reactive({
     row <- selectedRow()
     if (is.null(row) || !(row$databaseId %in% metaAnalysisDbIds)) {
@@ -686,35 +718,35 @@ shinyServer(function(input, output, session) {
       return(plot)
     }
   })
-  
+
   output$forestPlot <- renderPlot({
     forestPlot()
   })
-  
+
   output$forestPlotCaption <- renderUI({
     row <- selectedRow()
     if (is.null(row)) {
       return(NULL)
     } else {
       text <- "<strong>Figure 6.</strong> Forest plot showing the per-database and summary hazard ratios (and 95 percent confidence
-      intervals) comparing %s to %s for the outcome of %s, using %s. Estimates are shown both before and after empirical 
+      intervals) comparing %s to %s for the outcome of %s, using %s. Estimates are shown both before and after empirical
       calibration. The I2 is computed on the uncalibrated estimates."
       return(HTML(sprintf(text, input$target, input$comparator, input$outcome, row$psStrategy)))
     }
   })
-  
-  output$downloadForestPlotPng <- downloadHandler(filename = "ForestPlot.png", 
-                                                       contentType = "image/png", 
+
+  output$downloadForestPlotPng <- downloadHandler(filename = "ForestPlot.png",
+                                                       contentType = "image/png",
                                                        content = function(file) {
                                                          ggplot2::ggsave(file, plot = forestPlot(), width = 12, height = 9, dpi = 400)
                                                        })
-  
-  output$downloadForestPlotPdf <- downloadHandler(filename = "ForestPlot.pdf", 
-                                                       contentType = "application/pdf", 
+
+  output$downloadForestPlotPdf <- downloadHandler(filename = "ForestPlot.pdf",
+                                                       contentType = "application/pdf",
                                                        content = function(file) {
                                                          ggplot2::ggsave(file = file, plot = forestPlot(), width = 12, height = 9)
                                                        })
-  
+
   interactionEffects <- reactive({
     row <- selectedRow()
     if (is.null(row)) {
@@ -787,5 +819,5 @@ shinyServer(function(input, output, session) {
       return(subgroupTable)
     }
   })
-  
+
 })
