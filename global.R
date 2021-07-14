@@ -7,6 +7,17 @@ blind <- shinySettings$blind
 connection <- NULL
 positiveControlOutcome <- NULL
 
+cohortMask <- readr::read_csv(system.file("settings", "masks.csv", package = "LegendT2dm"))
+propensityScoreMask <- tibble::tibble(
+  label = c("unadjusted", "matched", "stratified"),
+  index = c(1, 2, 3)
+)
+
+timeAtRiskMask <- tibble::tibble(
+  label = c("Intent-to-treat (ITT)", "On-treatment (OT)", "OT and censor at +agent"),
+  multiplier = c(1, 0, 2)
+)
+
 splittableTables <- c("covariate_balance", "preference_score_dist", "kaplan_meier_dist")
 
 files <- list.files(dataFolder, pattern = ".rds")
@@ -17,7 +28,7 @@ removeParts <- paste0(gsub("database", "", databaseFileName), "$")
 
 # Remove data already in global environment:
 for (removePart in removeParts) {
-  tableNames <- gsub("_t[0-9]+_c[0-9]+$", "", gsub(removePart, "", files[grepl(removePart, files)])) 
+  tableNames <- gsub("_t[0-9]+_c[0-9]+$", "", gsub(removePart, "", files[grepl(removePart, files)]))
   camelCaseNames <- SqlRender::snakeCaseToCamelCase(tableNames)
   camelCaseNames <- unique(camelCaseNames)
   camelCaseNames <- camelCaseNames[!(camelCaseNames %in% SqlRender::snakeCaseToCamelCase(splittableTables))]
@@ -28,7 +39,7 @@ for (removePart in removeParts) {
 
 # Load data from data folder. R data objects will get names derived from the filename:
 loadFile <- function(file, removePart) {
-  tableName <- gsub("_t[0-9]+_c[0-9]+$", "", gsub(removePart, "", file)) 
+  tableName <- gsub("_t[0-9]+_c[0-9]+$", "", gsub(removePart, "", file))
   camelCaseName <- SqlRender::snakeCaseToCamelCase(tableName)
   if (!(tableName %in% splittableTables)) {
     newData <- readRDS(file.path(dataFolder, file))
@@ -39,11 +50,11 @@ loadFile <- function(file, removePart) {
       newData$traditionalLogRr <- NULL
       newData$traditionalSeLogRr <- NULL
       if (!all(colnames(newData) %in% colnames(existingData))) {
-         stop(sprintf("Columns names do not match in %s. \nObserved:\n %s, \nExpecting:\n %s", 
+         stop(sprintf("Columns names do not match in %s. \nObserved:\n %s, \nExpecting:\n %s",
                       file,
                       paste(colnames(newData), collapse = ", "),
                       paste(colnames(existingData), collapse = ", ")))
-                      
+
       }
       newData <- rbind(existingData, newData)
       newData <- unique(newData)
@@ -61,4 +72,4 @@ for (removePart in removeParts) {
 tcos <- unique(cohortMethodResult[, c("targetId", "comparatorId", "outcomeId")])
 tcos <- tcos[tcos$outcomeId %in% outcomeOfInterest$outcomeId, ]
 metaAnalysisDbIds <- database$databaseId[database$isMetaAnalysis == 1]
-               
+

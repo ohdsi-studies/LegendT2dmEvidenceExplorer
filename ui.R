@@ -1,5 +1,6 @@
 library(shiny)
 library(DT)
+library(dplyr)
 
 shinyUI(
   fluidPage(
@@ -36,23 +37,13 @@ shinyUI(
             selectInput("comparator", "Comparator", unique(exposureOfInterest$exposureName), selected = unique(exposureOfInterest$exposureName)[2]),
             selectInput("outcome", "Outcome", unique(outcomeOfInterest$outcomeName)),
             checkboxGroupInput("database", "Data source", database$databaseId, selected = database$databaseId),
-            checkboxGroupInput("analysis", "Analysis", cohortMethodAnalysis$description,  selected = cohortMethodAnalysis$description),
-            radioButtons("ignore1", "Metformin", c("prior", "none"), selected = "prior"),
+            # checkboxGroupInput("analysis", "Analysis", cohortMethodAnalysis$description,  selected = cohortMethodAnalysis$description),
+            checkboxGroupInput("propensityScore", "Propensity score", propensityScoreMask$label,  selected = propensityScoreMask$label),
+            checkboxGroupInput("timeAtRisk", "Time at risk", timeAtRiskMask$label, selected = timeAtRiskMask$label),
+            radioButtons("metformin", "Metformin", c("prior", "none"), selected = "prior"),
             radioButtons("heterogeneity", "Heterogeneity stratum",
-                         c("all",
-                           "18 - 44 yo", "45 - 64 yo", "≥ 65 yo",
-                           "female", "male",
-                           "Black",
-                           "low CV risk", "higher CV risk",
-                           "with RD", "without RD"),
-                         selected = "all"),
-            # radioButtons("ignore3", "Age", c("any", "18 - 44", "45 - 64", "≥ 65"), selected = "any"),
-            # radioButtons("ignore6", "Sex", c("any", "female", "male"), selected = "any"),
-            # radioButtons("ignore7", "Race", c("any", "Black"), selected = "any"),
-            # radioButtons("ignore2", "CV risk", c("any", "low", "higher"), selected = "any"),
-            # radioButtons("ignore5", "Renal disease", c("any", "yes", "no"), selected = "any"),
-            checkboxGroupInput("ignore1", "Propensity score", c("unadjusted", "stratified", "matched"),  selected = "stratified"),
-            checkboxGroupInput("ignore4", "Time at risk", c("Intent-to-treat (ITT)", "On-treatment (OT)", "OT and censor at +agent"), selected = "Intent-to-treat (ITT)")
+                         cohortMask %>% dplyr::filter(!is.na(.data$label)) %>% dplyr::pull(.data$label),
+                         selected = "all subjects")
           ),
           column(
             9,

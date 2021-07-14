@@ -1,5 +1,6 @@
 library(shiny)
 library(DT)
+library(dplyr)
 
 mainColumns <- c("description",
                  "databaseId",
@@ -36,7 +37,7 @@ showTermsOfUseModal <- function() {
   )
 }
 
-TERMS_OF_USE_ACCEPTED <- "accepted"
+TERMS_OF_USE_ACCEPTED <- FALSE
 
 shinyServer(function(input, output, session) {
   if (blind) {
@@ -50,8 +51,9 @@ shinyServer(function(input, output, session) {
 
     # if (!is.null(input$jscookie)) {
       # if (input$jscookie != TERMS_OF_USE_ACCEPTED) {
+    if (!TERMS_OF_USE_ACCEPTED) {
         showTermsOfUseModal()
-      # }
+    }
     # }
 
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
@@ -70,6 +72,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$termsOfUseAccept, {
     writeLines("Set cookie")
     session$sendCustomMessage("setCookie", TERMS_OF_USE_ACCEPTED)
+    TERMS_OF_USE_ACCEPTED <<- TRUE
     removeModal()
   })
 
@@ -77,7 +80,14 @@ shinyServer(function(input, output, session) {
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
     outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
-    analysisIds <- cohortMethodAnalysis$analysisId[cohortMethodAnalysis$description %in% input$analysis]
+
+    propensityScoreValues <- propensityScoreMask %>% filter(.data$label %in% input$propensityScore) %>% pull(.data$index)
+    timeAtRiskValues <- timeAtRiskMask %>% filter(.data$label %in% input$timeAtRisk) %>% pull(.data$multiplier)
+
+    analysisIds <- c(outer(propensityScoreValues, timeAtRiskValues,
+                           function(x, y) { x + 3 * y }))
+
+    analysisIds <- cohortMethodAnalysis$analysisId[cohortMethodAnalysis$analysisId %in% analysisIds]
     databaseIds <- input$database
     if (length(analysisIds) == 0) {
       analysisIds <- -1
