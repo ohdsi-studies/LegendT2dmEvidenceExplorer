@@ -2,10 +2,14 @@ library(shiny)
 library(DT)
 library(dplyr)
 
+titleName <- "LEGEND-T2DM Evidence Explorer"
+
 shinyUI(
   fluidPage(
     style = "width:1500px;",
-    titlePanel(paste("LEGEND-T2DM Evidence Explorer", if(blind) "   ***blinded***" else "")),
+    titlePanel(title = div(img(height = 50, src="OHDSI_toc_header.png"),
+                           HTML('&emsp;'), titleName, HTML('&emsp;'), HTML('&emsp;'), if(blind) "***blinded***" else ""),
+               windowTitle = titleName),
     tags$head(tags$style(type = "text/css", "
              #loadmessage {
                                  position: fixed;

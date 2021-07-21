@@ -18,6 +18,8 @@ timeAtRiskMask <- tibble::tibble(
   multiplier = c(1, 0, 2)
 )
 
+outcomeInfo <- readr::read_csv(system.file("settings", "OutcomesOfInterest.csv", package = "LegendT2dm"))
+
 splittableTables <- c("covariate_balance", "preference_score_dist", "kaplan_meier_dist")
 
 files <- list.files(dataFolder, pattern = ".rds")

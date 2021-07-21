@@ -19,10 +19,10 @@ mainColumnNames <- c("<span title=\"Analysis\">Analysis</span>",
                      "<span title=\"Lower bound of the 95 percent confidence interval (uncalibrated)\">LB</span>",
                      "<span title=\"Upper bound of the 95 percent confidence interval (uncalibrated)\">UB</span>",
                      "<span title=\"Two-sided p-value (uncalibrated)\">P</span>",
-                     "<span title=\"Hazard ratio (calibrated)\">Cal.HR</span>",
-                     "<span title=\"Lower bound of the 95 percent confidence interval (calibrated)\">Cal.LB</span>",
-                     "<span title=\"Upper bound of the 95 percent confidence interval (calibrated)\">Cal.UB</span>",
-                     "<span title=\"Two-sided p-value (calibrated)\">Cal.P</span>")
+                     "<span title=\"Hazard ratio (calibrated)\">CalHR</span>",
+                     "<span title=\"Lower bound of the 95 percent confidence interval (calibrated)\">CalLB</span>",
+                     "<span title=\"Upper bound of the 95 percent confidence interval (calibrated)\">CalUB</span>",
+                     "<span title=\"Two-sided p-value (calibrated)\">CalP</span>")
 
 showTermsOfUseModal <- function() {
   showModal(
@@ -115,12 +115,13 @@ shinyServer(function(input, output, session) {
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
     tcoSubset <- tcos[tcos$targetId == targetId & tcos$comparatorId == comparatorId, ]
-    outcomes <- outcomeOfInterest$outcomeName[outcomeOfInterest$outcomeId %in% tcoSubset$outcomeId]
+
+    # outcomes <- outcomeOfInterest$outcomeName[outcomeOfInterest$outcomeId %in% tcoSubset$outcomeId]
+    outcomes <- outcomeInfo$atlasName[outcomeInfo$cohortId %in% tcoSubset$outcomeId]
+
     updateSelectInput(session = session,
                       inputId = "outcome",
                       choices = unique(outcomes))
-    # writeLines(input$heterogeneity)
-    # writeLines(mask)
   })
 
   observeEvent(input$termsOfUseReject, {
@@ -137,7 +138,9 @@ shinyServer(function(input, output, session) {
   resultSubset <- reactive({
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-    outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+    #outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+    outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
 
     propensityScoreValues <- propensityScoreMask %>% filter(.data$label %in% input$propensityScore) %>% pull(.data$index)
     timeAtRiskValues <- timeAtRiskMask %>% filter(.data$label %in% input$timeAtRisk) %>% pull(.data$multiplier)
@@ -257,7 +260,9 @@ shinyServer(function(input, output, session) {
                    searching = FALSE,
                    lengthChange = TRUE,
                    ordering = TRUE,
-                   paging = TRUE)
+                   paging = TRUE,
+                   autoWidth = FALSE,
+                   columnDefs = list(list(width = '60px', targets = c(2:9))))
     selection = list(mode = "single", target = "row")
     table <- datatable(table,
                        options = options,
