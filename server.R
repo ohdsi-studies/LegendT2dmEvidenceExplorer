@@ -40,6 +40,7 @@ showTermsOfUseModal <- function() {
 TERMS_OF_USE_ACCEPTED <- FALSE
 
 shinyServer(function(input, output, session) {
+
   if (blind) {
     hideTab(inputId = "detailsTabsetPanel", target = "Kaplan-Meier")
   }
@@ -47,8 +48,63 @@ shinyServer(function(input, output, session) {
     hideTab(inputId = "detailsTabsetPanel", target = "Subgroups")
   }
 
-  observe({
 
+  subsetByIds <- function() {
+    mask <- cohortMask$mask[!is.na(cohortMask$label) & cohortMask$label == input$heterogeneity]
+    allExposureIds <- exposureOfInterest$exposureId
+    subsetIds <- allExposureIds[grep(mask, allExposureIds)]
+
+    mask <- ifelse(input$metformin == "prior",
+                   cohortMask$mask[cohortMask$tag == "priorMet"],
+                   cohortMask$mask[cohortMask$tag == "noMet"])
+    subsetIds <- subsetIds[grep(mask, subsetIds)]
+
+    subsetNames <- exposureOfInterest$exposureName[exposureOfInterest$exposureId %in% subsetIds]
+
+    oldTarget <- paste0(unlist(strsplit(input$target, " "))[1], ".*")
+    oldComparator <- paste0(unlist(strsplit(input$comparator, " "))[1], ".*")
+    newTargetIndex <- grep(oldTarget, subsetNames)
+    newComparatorIndex <- grep(oldComparator, subsetNames)
+
+    # if (length(subsetNames) > 0) {
+      updateSelectInput(session = session,
+                        inputId = "target",
+                        choices = subsetNames,
+                        selected = subsetNames[newTargetIndex])
+
+      updateSelectInput(session = session,
+                        inputId = "comparator",
+                        choices = subsetNames,
+                        selected = subsetNames[newComparatorIndex])
+    # } else {
+    #   updateSelectInput(session = session,
+    #                     inputId = "target",
+    #                     choices = character(0))
+    #
+    #   updateSelectInput(session = session,
+    #                     inputId = "comparator",
+    #                     choices = character(0))
+    #
+    #
+    # }
+
+    # if (length(subsetNames) == 0) {
+    #   input$target <- character(0)
+    #   input$comparator <- character(0)
+    # }
+  }
+
+  observeEvent(input$heterogeneity, {
+    message("Just clicked: ", input$heterogeneity)
+    subsetByIds()
+  })
+
+  observeEvent(input$metformin, {
+    message("Just clicked: ", input$metformin)
+    subsetByIds()
+  })
+
+  observe({
     # if (!is.null(input$jscookie)) {
       # if (input$jscookie != TERMS_OF_USE_ACCEPTED) {
     if (!TERMS_OF_USE_ACCEPTED) {
@@ -63,6 +119,8 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session = session,
                       inputId = "outcome",
                       choices = unique(outcomes))
+    # writeLines(input$heterogeneity)
+    # writeLines(mask)
   })
 
   observeEvent(input$termsOfUseReject, {
