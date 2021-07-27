@@ -139,7 +139,7 @@ shinyServer(function(input, output, session) {
     targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
     comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
 
-    #outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+    # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
     outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
 
     propensityScoreValues <- propensityScoreMask %>% filter(.data$label %in% input$propensityScore) %>% pull(.data$index)
@@ -207,7 +207,10 @@ shinyServer(function(input, output, session) {
      } else {
        targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
        comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-       outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+       # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+       outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
        balance <- getCovariateBalance(connection = connection,
                                       targetId = targetId,
                                       comparatorId = comparatorId,
@@ -346,7 +349,10 @@ shinyServer(function(input, output, session) {
     } else {
       targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
       comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-      outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+      # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+      outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
       followUpDist <- getCmFollowUpDist(connection = connection,
                                         targetId = targetId,
                                         comparatorId = comparatorId,
@@ -365,7 +371,10 @@ shinyServer(function(input, output, session) {
     } else {
       targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
       comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-      outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+      # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+      outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
       attrition <- getAttrition(connection = connection,
                                 targetId = targetId,
                                 comparatorId = comparatorId,
@@ -504,7 +513,10 @@ shinyServer(function(input, output, session) {
       } else {
         targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
         comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-        outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+        # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+        outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
         ps <- getPs(connection = connection,
                     targetIds = targetId,
                     comparatorIds = comparatorId,
@@ -732,7 +744,10 @@ shinyServer(function(input, output, session) {
     } else {
       targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
       comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-      outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+      # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+      outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
       km <- getKaplanMeier(connection = connection,
                                    targetId = targetId,
                                    comparatorId = comparatorId,
@@ -827,7 +842,10 @@ shinyServer(function(input, output, session) {
     } else {
       targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
       comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
-      outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+
+      # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+      outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
       subgroupResults <- getSubgroupResults(connection = connection,
                                             targetIds = targetId,
                                             comparatorIds = comparatorId,

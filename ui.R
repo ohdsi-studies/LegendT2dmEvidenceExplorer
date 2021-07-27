@@ -37,6 +37,7 @@ shinyUI(
         fluidRow(
           column(
             3,
+            style = "background-color:#e8e8e8;",
             selectInput("target", "Target", unique(exposureOfInterest$exposureName)),
             selectInput("comparator", "Comparator", unique(exposureOfInterest$exposureName), selected = unique(exposureOfInterest$exposureName)[2]),
             selectInput("outcome", "Outcome", unique(outcomeOfInterest$outcomeName)),
