@@ -18,6 +18,13 @@ timeAtRiskMask <- tibble::tibble(
   multiplier = c(1, 0, 2)
 )
 
+mapAnalysisIdForBalance <- function(analysisId) {
+  map <- c(1,5,6,
+           4,5,6,
+           7,5,6)
+  return(map[analysisId])
+}
+
 outcomeInfo <- readr::read_csv(system.file("settings", "OutcomesOfInterest.csv", package = "LegendT2dm"))
 
 splittableTables <- c("covariate_balance", "preference_score_dist", "kaplan_meier_dist")

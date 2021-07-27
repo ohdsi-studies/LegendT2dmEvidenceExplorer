@@ -215,10 +215,31 @@ shinyServer(function(input, output, session) {
                                       targetId = targetId,
                                       comparatorId = comparatorId,
                                       databaseId = row$databaseId,
-                                      analysisId = row$analysisId,
-                                      outcomeId = outcomeId)
+                                      analysisId = mapAnalysisIdForBalance(row$analysisId),
+                                      outcomeId = NULL ) #outcomeId)
        return(balance)
      }
+  })
+
+  balanceWithOutcome <- reactive({
+    row <- selectedRow()
+    if (is.null(row)) {
+      return(NULL)
+    } else {
+      targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
+      comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
+
+      # outcomeId <- outcomeOfInterest$outcomeId[outcomeOfInterest$outcomeName == input$outcome]
+      outcomeId <- outcomeInfo$cohortId[outcomeInfo$atlasName == input$outcome]
+
+      balance <- getCovariateBalance(connection = connection,
+                                     targetId = targetId,
+                                     comparatorId = comparatorId,
+                                     databaseId = row$databaseId,
+                                     analysisId = mapAnalysisIdForBalance(row$analysisId),
+                                     outcomeId = outcomeId)
+      return(balance)
+    }
   })
 
   output$isMetaAnalysis <- reactive({
@@ -430,7 +451,7 @@ shinyServer(function(input, output, session) {
     if (is.null(row)) {
       return(NULL)
     } else {
-      bal <- balance()
+      bal <- balanceWithOutcome()
       if (nrow(bal) == 0) {
         return(NULL)
       }
@@ -598,14 +619,15 @@ shinyServer(function(input, output, session) {
         return(NULL)
       }
       left_pct <- (hover$x - hover$domain$left) / (hover$domain$right - hover$domain$left)
+      left_px <- hover$range$left #+ left_pct * (hover$range$right - hover$range$left)
+
       top_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
-      left_px <- hover$range$left + left_pct * (hover$range$right - hover$range$left)
-      top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top)
+      top_px <- hover$range$top #+ top_pct * (hover$range$bottom - hover$range$top)
       style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
                       "left:",
-                      left_px - 251,
+                      left_px, # - 251,
                       "px; top:",
-                      top_px - 150,
+                      top_px, # - 150,
                       "px; width:500px;")
       beforeMatchingStdDiff <- formatC(point$beforeMatchingStdDiff, digits = 2, format = "f")
       afterMatchingStdDiff <- formatC(point$afterMatchingStdDiff, digits = 2, format = "f")

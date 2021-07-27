@@ -33,7 +33,7 @@ getIndications <- function(connection) {
 }
 
 getSubgroups <- function(connection) {
-  sql <- "SELECT DISTINCT interaction_covariate_id AS subgroup_id, covariate_name AS subgroup_name 
+  sql <- "SELECT DISTINCT interaction_covariate_id AS subgroup_id, covariate_name AS subgroup_name
     FROM (
       SELECT DISTINCT interaction_covariate_id
       FROM cm_interaction_result
@@ -98,13 +98,13 @@ getDatabaseDetails <- function(connection, databaseId) {
 
 getIndicationForExposure <- function(connection,
                                      exposureIds = c()) {
-  sql <- "SELECT exposure_id, indication_id FROM single_exposure_of_interest WHERE"  
+  sql <- "SELECT exposure_id, indication_id FROM single_exposure_of_interest WHERE"
   sql <- paste(sql, paste0("exposure_id IN (", paste(exposureIds, collapse = ", "), ")"))
-  
+
   sql <- SqlRender::translateSql(sql, targetDialect = connection@dbms)$sql
   indications <- querySql(connection, sql)
   colnames(indications) <- SqlRender::snakeCaseToCamelCase(colnames(indications))
-  return(indications)  
+  return(indications)
 }
 
 getTcoDbs <- function(connection,
@@ -245,7 +245,7 @@ getControlResults <- function(connection, targetId, comparatorId, analysisId, da
                                   cohortMethodResult$analysisId == analysisId, ]
   if (!is.null(databaseId))
     results <- results[results$databaseId == databaseId, ]
-  
+
   results$effectSize <- NA
   idx <- results$outcomeId %in% negativeControlOutcome$outcomeId
   results$effectSize[idx] <- 1
@@ -254,7 +254,7 @@ getControlResults <- function(connection, targetId, comparatorId, analysisId, da
     results$effectSize[idx] <- positiveControlOutcome$effectSize[match(results$outcomeId[idx],
                                                                        positiveControlOutcome$outcomeId)]
   }
-  
+
   results <- results[!is.na(results$effectSize), ]
   return(results)
 }
@@ -279,7 +279,7 @@ getCovariateBalance <- function(connection,
                                 analysisId,
                                 databaseId = NULL,
                                 outcomeId = NULL) {
-  
+
   loadCovariateBalance <- function(file, parseDatabaseName = FALSE) {
     balance <- readRDS(file)
     if (parseDatabaseName) {
@@ -291,7 +291,7 @@ getCovariateBalance <- function(connection,
     }
     return(balance)
   }
-  
+
   if (!is.null(databaseId)) {
     file <- sprintf("covariate_balance_t%s_c%s_%s.rds", targetId, comparatorId, databaseId)
     balance <- loadCovariateBalance(file.path(dataFolder, file))
@@ -301,23 +301,26 @@ getCovariateBalance <- function(connection,
   }
   colnames(balance) <- SqlRender::snakeCaseToCamelCase(colnames(balance))
   balance <- balance[balance$analysisId == analysisId, ]
-  if (!is.null(outcomeId))
+  if (!is.null(outcomeId)) {
     balance <- balance[balance$outcomeId == outcomeId, ]
-  
+  } else {
+    balance <- balance[is.na(balance$outcomeId), ]
+  }
+
   if (!is.null(databaseId))
-    balance <- merge(balance, covariate[covariate$databaseId == databaseId & covariate$analysisId == analysisId, 
+    balance <- merge(balance, covariate[covariate$databaseId == databaseId & covariate$analysisId == analysisId,
                                       c("covariateId", "covariateAnalysisId", "covariateName")])
   else
-    balance <- merge(balance, covariate[covariate$analysisId == analysisId, 
+    balance <- merge(balance, covariate[covariate$analysisId == analysisId,
                                         c("covariateId", "covariateAnalysisId", "covariateName")])
   balance <- balance[ c("databaseId",
                         "covariateId",
                         "covariateName",
-                        "covariateAnalysisId", 
-                        "targetMeanBefore", 
-                        "comparatorMeanBefore", 
-                        "stdDiffBefore", 
-                        "targetMeanAfter", 
+                        "covariateAnalysisId",
+                        "targetMeanBefore",
+                        "comparatorMeanBefore",
+                        "stdDiffBefore",
+                        "targetMeanAfter",
                         "comparatorMeanAfter",
                         "stdDiffAfter")]
   colnames(balance) <- c("databaseId",
@@ -357,7 +360,7 @@ getKaplanMeier <- function(connection, targetId, comparatorId, outcomeId, databa
   colnames(km) <- SqlRender::snakeCaseToCamelCase(colnames(km))
   km <- km[km$outcomeId == outcomeId &
              km$analysisId == analysisId, ]
-  
+
   return(km)
 }
 
@@ -400,9 +403,9 @@ getPropensityModel <- function(connection, targetId, comparatorId, analysisId, d
                              propensityModel$comparatorId == comparatorId &
                              propensityModel$analysisId == analysisId &
                              propensityModel$databaseId == databaseId, ]
-  covariateSubset <- covariate[covariate$databaseId == databaseId & covariate$analysisId == analysisId, 
+  covariateSubset <- covariate[covariate$databaseId == databaseId & covariate$analysisId == analysisId,
                                c("covariateId", "covariateName")]
-  covariateSubset <- rbind(covariateSubset, 
+  covariateSubset <- rbind(covariateSubset,
                            data.frame(covariateId = 0,
                                       covariateName = "Intercept"))
   model <- merge(model, covariateSubset)
@@ -413,7 +416,7 @@ getPropensityModel <- function(connection, targetId, comparatorId, analysisId, d
 getCovariateBalanceSummary <- function(connection, targetId, comparatorId, analysisId,
                                        beforeLabel = "Before matching",
                                        afterLabel = "After matching") {
-  
+
   balance <- getCovariateBalance(connection = connection,
                                  targetId = targetId,
                                  comparatorId = comparatorId,
@@ -431,12 +434,12 @@ getCovariateBalanceSummary <- function(connection, targetId, comparatorId, analy
                      qs = quantile(.data$afterMatchingStdDiff, c(0, 0.25, 0.5, 0.75, 1)), prob = c("ymin", "lower", "median", "upper", "ymax")) %>%
     tidyr::spread(key = "prob", value = "qs")
   balanceAfter[, "type"] <- afterLabel
-  
+
   balanceSummary <- rbind(balanceBefore, balanceAfter) %>%
     dplyr::ungroup()
-  
+
   return(balanceSummary)
-  
+
 }
 
 getNegativeControlEstimates <- function(connection, targetId, comparatorId, analysisId) {
@@ -456,7 +459,7 @@ getNegativeControlEstimates <- function(connection, targetId, comparatorId, anal
   # #            .data$comparatorId == comparatorId &
   # #            .data$analysisId == analysisId) %>%
   # #   dplyr::select(.data$databaseId, .data$logRr, .data$seLogRr)
-  # 
+  #
   # getControlResults()
   if(nrow(subset) == 0)
     return(NULL)
