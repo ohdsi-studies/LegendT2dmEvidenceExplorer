@@ -465,3 +465,28 @@ getNegativeControlEstimates <- function(connection, targetId, comparatorId, anal
     return(NULL)
   return(subset)
 }
+
+loadResultsTable <- function(tableName, required = TRUE) {
+  if (required || tableName %in% resultsTablesOnServer) {
+    tryCatch({
+      table <- DatabaseConnector::dbReadTable(connectionPool,
+                                              paste(resultsDatabaseSchema, tableName, sep = "."))
+    }, error = function(err) {
+      stop(
+        "Error reading from ",
+        paste(resultsDatabaseSchema, tableName, sep = "."),
+        ": ",
+        err$message
+      )
+    })
+    colnames(table) <-
+      SqlRender::snakeCaseToCamelCase(colnames(table))
+    if (nrow(table) > 0) {
+      assign(
+        SqlRender::snakeCaseToCamelCase(tableName),
+        dplyr::as_tibble(table),
+        envir = .GlobalEnv
+      )
+    }
+  }
+}
