@@ -8,8 +8,9 @@ appConnectionDetails <- DatabaseConnector::createConnectionDetails(
   password = keyring::key_get("legendt2dmPassword"))
 
 # Run from db server (data download can take a long time)
-LegendT2dmEvidenceExplorer::launchEvidenceExplorer(connectionDetails = appConnectionDetails,
-                                                   resultsDatabaseSchema = "legendt2dm_class_results")
+LegendT2dmEvidenceExplorer::launchEvidenceExplorer(cohorts = "class",
+                                                   connectionDetails = appConnectionDetails,
+                                                   blind = TRUE)
 
 # Run from local files
 LegendT2dmEvidenceExplorer::launchEvidenceExplorer(dataFolder = keyring::key_get("legendT2dmShinyData"),

@@ -42,18 +42,25 @@
 #' Launches a Shiny app that allows the user to explore the evidence
 #'
 #' @export
-launchEvidenceExplorer <- function(dataFolder = "data",
+launchEvidenceExplorer <- function(cohorts = "class",
+                                   dataFolder = "data",
                                    dataFile = "PreMerged.RData",
                                    connectionDetails = NULL,
-                                   resultsDatabaseSchema = NULL,
-                                   vocabularyDatabaseSchemas = resultsDatabaseSchema,
                                    blind = TRUE,
+                                   headerText = "LEGEND-T2DM Class Evidence",
                                    aboutText = NULL,
                                    runOverNetwork = FALSE,
                                    port = 80,
-                                   launch.browser = FALSE,
-                                   appDir = system.file("shiny",
-                                                        package = "LegendT2dmEvidenceExplorer")) {
+                                   launch.browser = FALSE) {
+
+  appDir = system.file("shiny", package = "LegendT2dmEvidenceExplorer")
+
+  if (cohorts == "class") {
+    headerText <- "LEGEND-T2DM Class Evidence"
+    resultsDatabaseSchema <- "legendt2dm_class_results"
+  } else {
+    stop("Unknown cohorts")
+  }
 
   if (!is.null(connectionDetails) &&
       connectionDetails$dbms != "postgresql") {
@@ -81,10 +88,10 @@ launchEvidenceExplorer <- function(dataFolder = "data",
   shinySettings <- list(
     connectionDetails = connectionDetails,
     resultsDatabaseSchema = resultsDatabaseSchema,
-    vocabularyDatabaseSchemas = vocabularyDatabaseSchemas,
     dataFolder = dataFolder,
     dataFile = dataFile,
     aboutText = aboutText,
+    headerText = headerText,
     blind = blind
   )
   .GlobalEnv$shinySettings <- shinySettings
