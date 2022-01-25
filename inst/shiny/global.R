@@ -18,7 +18,7 @@ getConfiguration <- function(label) {
 # Load general configuration information
 #
 
-cohortMask <- readr::read_csv(system.file("settings", "masks.csv", package = "LegendT2dm"))
+cohortMask <- readr::read_csv(file.path("settings", "masks.csv"))
 propensityScoreMask <- tibble::tibble(
   label = c("unadjusted", "matched", "stratified"),
   index = c(1, 2, 3)
@@ -32,13 +32,18 @@ timeAtRiskMask <- tibble::tibble(
 mapAnalysisIdForBalance <- function(analysisId) {
   map <- c(1,5,6,
            4,5,6,
-           7,5,6)
+           7,5,6,
+           0,
+           11,5,6,
+           14,5,6,
+           17,5,6)
   return(map[analysisId])
 }
 
-outcomeInfo <- readr::read_csv(system.file("settings", "OutcomesOfInterest.csv", package = "LegendT2dm"))
+outcomeInfo <- readr::read_csv(file.path("settings", "OutcomesOfInterest.csv"))
 
 connectionPool <- NULL
+connection <- NULL
 
 #
 # Set defaults when running on ShinyDeploy server
@@ -78,17 +83,21 @@ if (!exists("shinySettings")) { # Running on ShinyDeploy server
   databaseMode <- !is.null(shinySettings$connectionDetails)
   if (databaseMode) {
     connectionDetails <- shinySettings$connectionDetails
-    connectionPool <-
-      pool::dbPool(
-        drv = DatabaseConnector::DatabaseConnectorDriver(),
-        dbms = "postgresql",
-        server = connectionDetails$server(),
-        port = connectionDetails$port(),
-        user = connectionDetails$user(),
-        password = connectionDetails$password(),
-        connectionString = connectionDetails$connectionString()
-      )
+    # connectionPool <-
+    #   pool::dbPool(
+    #     drv = DatabaseConnector::DatabaseConnectorDriver(),
+    #     dbms = "postgresql",
+    #     server = connectionDetails$server(),
+    #     port = connectionDetails$port(),
+    #     user = connectionDetails$user(),
+    #     password = connectionDetails$password(),
+    #     connectionString = connectionDetails$connectionString()
+    #   )
+    connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
     resultsDatabaseSchema <- shinySettings$resultsDatabaseSchema
+
+    sql <- paste0("SET search_path TO ", resultsDatabaseSchema, ";")
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
   } else {
     dataFolder <- shinySettings$dataFolder
   }
@@ -100,28 +109,53 @@ if (!exists("shinySettings")) { # Running on ShinyDeploy server
 
 if (databaseMode) {
 
-  onStop(function() {
-    if (DBI::dbIsValid(connectionPool)) {
-      writeLines("Closing database pool")
-      pool::poolClose(connectionPool)
-    }
-  })
+  # onStop(function() {
+  #   if (DBI::dbIsValid(connectionPool)) {
+  #     writeLines("Closing database pool")
+  #     pool::poolClose(connectionPool)
+  #   }
+  # })
 
-  loadResultsTable("attrition")
-  loadResultsTable("cm_follow_up_dist")
-  loadResultsTable("cohort_method_analysis")
-  loadResultsTable("cohort_method_result")
-  loadResultsTable("comparison_summary")
-  loadResultsTable("covariate")
-  loadResultsTable("covariate_analysis")
-  loadResultsTable("database")
-  loadResultsTable("exposure_of_interest")
-  loadResultsTable("exposure_summary")
+  exposureOfInterest <- getExposures(connection)
+  outcomeOfInterest <- getOutcomes(connection)
+  database <- getDatabases(connection)
+  metaAnalysisDbIds <- database$databaseId[database$isMetaAnalysis == 1]
+  cohortMethodAnalysis <- getAnalyses(connection)
+
+  sql <- "SELECT
+    DISTINCT target_id, comparator_id, cohort_method_result.outcome_id
+  FROM cohort_method_result
+  INNER JOIN outcome_of_interest ON
+    cohort_method_result.outcome_id = outcome_of_interest.outcome_id"
+
+  tcos <- DatabaseConnector::querySql(connection = connection,
+                                      sql = sql)
+
+  colnames(tcos) <- SqlRender::snakeCaseToCamelCase(colnames(tcos))
+
+  sql <- paste0(
+    "SELECT * FROM cohort_method_result WHERE outcome_id IN (",
+    paste(outcomeOfInterest$outcomeId, collapse = ","),
+    ")")
+
+  cohortMethodResult <- DatabaseConnector::querySql(connection, sql)
+  colnames(cohortMethodResult) <- SqlRender::snakeCaseToCamelCase(colnames(cohortMethodResult))
+
+  # loadResultsTable("attrition")
+  # loadResultsTable("cm_follow_up_dist")
+  # loadResultsTable("cohort_method_analysis")
+  # loadResultsTable("cohort_method_result")
+  # loadResultsTable("comparison_summary")
+  # loadResultsTable("covariate")
+  # loadResultsTable("covariate_analysis")
+  # loadResultsTable("database")
+  # loadResultsTable("exposure_of_interest")
+  # loadResultsTable("exposure_summary")
   # loadResultsTable("likelihood_profile") # Not yet needed
-  loadResultsTable("negative_control_outcome")
-  loadResultsTable("outcome_of_interest")
-  loadResultsTable("propensity_model")
-  loadResultsTable("ps_auc_assessment")
+  # loadResultsTable("negative_control_outcome")
+  # loadResultsTable("outcome_of_interest")
+  # loadResultsTable("propensity_model")
+  # loadResultsTable("ps_auc_assessment")
 
 } else { # Load from local folder
 
@@ -175,9 +209,8 @@ if (databaseMode) {
   for (removePart in removeParts) {
     invisible(lapply(files[grepl(removePart, files)], loadFile, removePart))
   }
+
+  tcos <- unique(cohortMethodResult[, c("targetId", "comparatorId", "outcomeId")])
+  tcos <- tcos[tcos$outcomeId %in% outcomeOfInterest$outcomeId, ]
+  metaAnalysisDbIds <- database$databaseId[database$isMetaAnalysis == 1]
 }
-
-tcos <- unique(cohortMethodResult[, c("targetId", "comparatorId", "outcomeId")])
-tcos <- tcos[tcos$outcomeId %in% outcomeOfInterest$outcomeId, ]
-metaAnalysisDbIds <- database$databaseId[database$isMetaAnalysis == 1]
-

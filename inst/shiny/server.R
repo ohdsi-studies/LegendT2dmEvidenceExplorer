@@ -59,6 +59,17 @@ shinyServer(function(input, output, session) {
                    cohortMask$mask[cohortMask$tag == "noMet"])
     subsetIds <- subsetIds[grep(mask, subsetIds)]
 
+    if (!(timeAtRiskMask$label[3] %in% input$timeAtRisk)) {
+      mask <- cohortMask$mask[cohortMask$tag == "ittOt1"]
+      subsetIds <- subsetIds[grep(mask, subsetIds)]
+    }
+
+    if (!(timeAtRiskMask$label[1] %in% input$timeAtRisk) &&
+        !(timeAtRiskMask$label[2] %in% input$timeAtRisk)) {
+      mask <- cohortMask$mask[cohortMask$tag == "ot2"]
+      subsetIds <- subsetIds[grep(mask, subsetIds)]
+    }
+
     subsetNames <- exposureOfInterest$exposureName[exposureOfInterest$exposureId %in% subsetIds]
 
     oldTarget <- paste0(unlist(strsplit(input$target, " "))[1], ".*")
@@ -96,6 +107,11 @@ shinyServer(function(input, output, session) {
 
   observeEvent(input$heterogeneity, {
     message("Just clicked: ", input$heterogeneity)
+    subsetByIds()
+  })
+
+  observeEvent(input$timeAtRisk, {
+    message("Just clicked: ", input$timeAtRisk)
     subsetByIds()
   })
 
@@ -216,7 +232,7 @@ shinyServer(function(input, output, session) {
                                       comparatorId = comparatorId,
                                       databaseId = row$databaseId,
                                       analysisId = mapAnalysisIdForBalance(row$analysisId),
-                                      outcomeId = NULL ) #outcomeId)
+                                      outcomeId = NULL)
        return(balance)
      }
   })
@@ -356,7 +372,8 @@ shinyServer(function(input, output, session) {
     if (!is.null(row)) {
       text <- "<strong>Table 1b.</strong> Time (days) at risk distribution expressed as
       minimum (min), 25th percentile (P25), median, 75th percentile (P75), and maximum (max) in the target
-     (<em>%s</em>) and comparator (<em>%s</em>) cohort after propensity score adjustment."
+     (<em>%s</em>) and comparator (<em>%s</em>) cohort after propensity score adjustment.  Also listed
+      is the # of persons with 0-days time at risk; these do not contribute to the outcome-model likelihood."
       return(HTML(sprintf(text, input$target, input$comparator)))
     } else {
       return(NULL)
