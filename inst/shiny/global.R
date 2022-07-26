@@ -14,6 +14,14 @@ getConfiguration <- function(label) {
   }
 }
 
+makeOt2 <- function(id) {
+  string <- as.character(id)
+  string <- paste0(substring(string, 1, 2),
+                   "2",
+                   substring(string, 4, 9))
+  as.integer(string)
+}
+
 #
 # Load general configuration information
 #

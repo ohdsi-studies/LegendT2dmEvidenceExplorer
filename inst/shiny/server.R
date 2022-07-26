@@ -59,6 +59,9 @@ shinyServer(function(input, output, session) {
                    cohortMask$mask[cohortMask$tag == "noMet"])
     subsetIds <- subsetIds[grep(mask, subsetIds)]
 
+    # Display only ittOt1
+    # mask <- cohortMask$mask[cohortMask$tag == "ittOt1"]
+    # subsetIds <- subsetIds[grep(mask, subsetIds)]
     if (!(timeAtRiskMask$label[3] %in% input$timeAtRisk)) {
       mask <- cohortMask$mask[cohortMask$tag == "ittOt1"]
       subsetIds <- subsetIds[grep(mask, subsetIds)]
@@ -165,6 +168,13 @@ shinyServer(function(input, output, session) {
                            function(x, y) { x + 3 * y }))
 
     analysisIds <- cohortMethodAnalysis$analysisId[cohortMethodAnalysis$analysisId %in% analysisIds]
+
+    # useOt1 <- timeAtRiskMask$label[1] %in% input$timeAtRisk || timeAtRiskMask$label[2] %in% input$timeAtRisk
+    # useOt2 <- timeAtRiskMask$label[3] %in% input$timeAtRisk
+    #
+    # targetIds <- c(ifelse(useOt1, targetId, NULL), ifelse(useOt2, makeOt2(targetId), NULL))
+    # comparatorIds <- c(ifelse(useOt1, comparatorId, NULL), ifelse(useOt2, makeOt2(comparatorId), NULL))
+
     databaseIds <- input$database
     if (length(analysisIds) == 0) {
       analysisIds <- -1
