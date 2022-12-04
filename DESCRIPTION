@@ -31,4 +31,4 @@ Imports:
   stringr,
   SqlRender,
   tidyr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

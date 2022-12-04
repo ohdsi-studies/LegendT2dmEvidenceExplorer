@@ -5,16 +5,15 @@
 \title{Launch the Evidence Explorer Shiny app}
 \usage{
 launchEvidenceExplorer(
+  cohorts = "class",
   dataFolder = "data",
   dataFile = "PreMerged.RData",
   connectionDetails = NULL,
-  resultsDatabaseSchema = NULL,
-  vocabularyDatabaseSchemas = resultsDatabaseSchema,
+  blind = TRUE,
   aboutText = NULL,
   runOverNetwork = FALSE,
   port = 80,
-  launch.browser = FALSE,
-  appDir = system.file("shiny", package = "LegendT2dmEvidenceExplorer")
+  launch.browser = FALSE
 )
 }
 \arguments{
@@ -30,13 +29,7 @@ DatabaseConnector package, specifying how to connect to the server where
 the study results results have been uploaded using the
 \code{\link{uploadResults}} function.}
 
-\item{resultsDatabaseSchema}{The schema on the database server where the results
-have been uploaded.}
-
-\item{vocabularyDatabaseSchemas}{(optional) A list of one or more schemas on the database server where the vocabulary tables are located.
-The default value is the value of the resultsDatabaseSchema. We can provide a list of vocabulary schema
-that might represent different versions of the OMOP vocabulary tables. It allows us to compare the impact
-of vocabulary changes on Diagnostics.}
+\item{blind}{Should effect-estimates be hidden?}
 
 \item{aboutText}{Text (using HTML markup) that will be displayed in an About tab in the Shiny app.
 If not provided, no About tab will be shown.}
@@ -48,11 +41,29 @@ If not provided, no About tab will be shown.}
 \item{launch.browser}{Should the app be launched in your default browser, or in a Shiny window.
 Note: copying to clipboard will not work in a Shiny window.}
 
-\item{appDir}{Top directory of Shiny app}
+\item{cohort}{A string denoting which results schema to explore.}
 }
 \description{
 Launch the Evidence Explorer Shiny app
 }
 \details{
 Launches a Shiny app that allows the user to explore the evidence
+}
+\examples{
+\dontrun{
+# OHDSI shinydb legendt2dm read-only credentials
+appConnectionDetails <- DatabaseConnector::createConnectionDetails(
+  dbms = "postgresql",
+  server = paste(keyring::key_get("legendt2dmServer"),
+                 keyring::key_get("legendt2dmDatabase"),
+                 sep = "/"),
+  user = keyring::key_get("legendt2dmUser"),
+  password = keyring::key_get("legendt2dmPassword"))
+
+# Run from db server (data download can take a long time)
+LegendT2dmEvidenceExplorer::launchEvidenceExplorer(cohorts = "class",
+                                                   connectionDetails = appConnectionDetails,
+                                                   blind = TRUE)
+}
+
 }

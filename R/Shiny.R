@@ -15,31 +15,44 @@
 # limitations under the License.
 
 #' Launch the Evidence Explorer Shiny app
+#' @param cohort            A string denoting which results schema to explore.
 #' @param connectionDetails An object of type \code{connectionDetails} as created using the
 #'                          \code{\link[DatabaseConnector]{createConnectionDetails}} function in the
 #'                          DatabaseConnector package, specifying how to connect to the server where
 #'                          the study results results have been uploaded using the
 #'                          \code{\link{uploadResults}} function.
-#' @param resultsDatabaseSchema  The schema on the database server where the results
-#'                               have been uploaded.
-#' @param vocabularyDatabaseSchemas  (optional) A list of one or more schemas on the database server where the vocabulary tables are located.
-#'                                   The default value is the value of the resultsDatabaseSchema. We can provide a list of vocabulary schema
-#'                                   that might represent different versions of the OMOP vocabulary tables. It allows us to compare the impact
-#'                                   of vocabulary changes on Diagnostics.
 #' @param dataFolder       A folder where the premerged file is stored. Use
 #'                         the \code{\link{preMergeDiagnosticsFiles}} function to generate this file.
 #' @param dataFile         (Optional) The name of the .RData file with results. It is commonly known as the
 #'                         Premerged file.
+#' @param blind            Should effect-estimates be hidden?
 #' @param runOverNetwork   (optional) Do you want the app to run over your network?
 #' @param port             (optional) Only used if \code{runOverNetwork} = TRUE.
 #' @param launch.browser   Should the app be launched in your default browser, or in a Shiny window.
 #'                         Note: copying to clipboard will not work in a Shiny window.
 #' @param aboutText        Text (using HTML markup) that will be displayed in an About tab in the Shiny app.
 #'                         If not provided, no About tab will be shown.
-#' @param appDir           Top directory of Shiny app
+#'
 #'
 #' @details
 #' Launches a Shiny app that allows the user to explore the evidence
+#'
+#' @examples
+#' \dontrun{
+#' # OHDSI shinydb legendt2dm read-only credentials
+#' appConnectionDetails <- DatabaseConnector::createConnectionDetails(
+#'   dbms = "postgresql",
+#'   server = paste(keyring::key_get("legendt2dmServer"),
+#'                  keyring::key_get("legendt2dmDatabase"),
+#'                  sep = "/"),
+#'   user = keyring::key_get("legendt2dmUser"),
+#'   password = keyring::key_get("legendt2dmPassword"))
+#'
+#' # Run from db server (data download can take a long time)
+#' LegendT2dmEvidenceExplorer::launchEvidenceExplorer(cohorts = "class",
+#'                                                    connectionDetails = appConnectionDetails,
+#'                                                    blind = TRUE)
+#' }
 #'
 #' @export
 launchEvidenceExplorer <- function(cohorts = "class",
@@ -47,7 +60,6 @@ launchEvidenceExplorer <- function(cohorts = "class",
                                    dataFile = "PreMerged.RData",
                                    connectionDetails = NULL,
                                    blind = TRUE,
-                                   headerText = "LEGEND-T2DM Class Evidence",
                                    aboutText = NULL,
                                    runOverNetwork = FALSE,
                                    port = 80,
