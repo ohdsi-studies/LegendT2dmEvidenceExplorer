@@ -70,6 +70,9 @@ launchEvidenceExplorer <- function(cohorts = "class",
   if (cohorts == "class") {
     headerText <- "LEGEND-T2DM Class Evidence"
     resultsDatabaseSchema <- "legendt2dm_class_results"
+  } else if (cohorts == "drug") {
+    headerText = "LEGEND-T2DM Drug Evidence"
+    resultsDatabaseSchema <- "legendt2dm_drug_results"
   } else {
     stop("Unknown cohorts")
   }
