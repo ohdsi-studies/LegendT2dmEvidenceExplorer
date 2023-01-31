@@ -396,13 +396,16 @@ getCovariateBalance <- function(connection,
       AND covariate_balance.analysis_id = covariate.analysis_id
       WHERE target_id = @target_id
       AND comparator_id = @comparator_id
-      AND covariate.database_id = '@database_id'
+      AND covariate.database_id IN (@database_id)
       AND covariate.analysis_id = @analysis_id
       AND outcome_id = @outcome_id"
     sql <- SqlRender::render(sql,
                              target_id = targetId,
                              comparator_id = comparatorId,
-                             database_id = databaseId,
+                             database_id = paste0("'",
+                                                  paste0(databaseId, collapse = "', '"),
+                                                  "'"),
+                             # database_id = databaseId,
                              analysis_id = analysisId,
                              outcome_id = outcomeId)
     sql <- SqlRender::translate(sql, targetDialect = connection@dbms)
@@ -580,6 +583,7 @@ getPropensityModel <- function(connection, targetId, comparatorId, analysisId, d
 }
 
 getCovariateBalanceSummary <- function(connection, targetId, comparatorId, analysisId,
+                                       databaseIds,
                                        beforeLabel = "Before matching",
                                        afterLabel = "After matching") {
 
@@ -587,7 +591,8 @@ getCovariateBalanceSummary <- function(connection, targetId, comparatorId, analy
                                  targetId = targetId,
                                  comparatorId = comparatorId,
                                  analysisId = analysisId,
-                                 outcomeId = "")
+                                 databaseId = databaseIds,
+                                 outcomeId = NULL)
   balanceBefore <- balance %>%
     dplyr::group_by(.data$databaseId) %>%
     dplyr::summarise(covariateCount = dplyr::n(),
@@ -607,6 +612,7 @@ getCovariateBalanceSummary <- function(connection, targetId, comparatorId, analy
   return(balanceSummary)
 
 }
+
 
 getNegativeControlEstimates <- function(connection, targetId, comparatorId, analysisId) {
   subset <- getControlResults(connection, targetId, comparatorId, analysisId, includePositiveControls = FALSE)

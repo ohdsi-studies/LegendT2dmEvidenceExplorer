@@ -48,7 +48,6 @@ shinyServer(function(input, output, session) {
     hideTab(inputId = "detailsTabsetPanel", target = "Subgroups")
   }
 
-
   subsetByIds <- function() {
     mask <- cohortMask$mask[!is.na(cohortMask$label) & cohortMask$label == input$heterogeneity]
     allExposureIds <- exposureOfInterest$exposureId
@@ -164,8 +163,13 @@ shinyServer(function(input, output, session) {
     propensityScoreValues <- propensityScoreMask %>% filter(.data$label %in% input$propensityScore) %>% pull(.data$index)
     timeAtRiskValues <- timeAtRiskMask %>% filter(.data$label %in% input$timeAtRisk) %>% pull(.data$multiplier)
 
+    message("timeAtRiskValues: ", paste(timeAtRiskValues))
+    message("propensityScoreValues: ", paste(propensityScoreValues))
+
     analysisIds <- c(outer(propensityScoreValues, timeAtRiskValues,
                            function(x, y) { x + 3 * y }))
+
+    message("analysisIds: ", paste(analysisIds))
 
     analysisIds <- cohortMethodAnalysis$analysisId[cohortMethodAnalysis$analysisId %in% analysisIds]
 
@@ -342,11 +346,14 @@ shinyServer(function(input, output, session) {
       return(NULL)
     } else {
       if (row$databaseId %in% metaAnalysisDbIds) {
+        # Filter data sources
+        sources <- c(strsplit(row$sources, split = ";")[[1]], row$databaseId)
         results <- getMainResults(connection = connection,
                                   targetIds = row$targetId,
                                   comparatorIds = row$comparatorId,
                                   outcomeIds = row$outcomeId,
-                                  analysisIds = row$analysisId)
+                                  analysisIds = row$analysisId,
+                                  databaseIds = sources)
         table <- preparePowerTable(results, cohortMethodAnalysis, includeDatabaseId = TRUE)
         table$description <- NULL
         table$databaseId[table$databaseId %in% metaAnalysisDbIds] <- "Summary"
@@ -558,6 +565,9 @@ shinyServer(function(input, output, session) {
                     targetIds = row$targetId,
                     comparatorIds = row$comparatorId,
                     analysisId = row$analysisId)
+        # Filter data sources
+        sources <- c(strsplit(row$sources, split = ";")[[1]], row$databaseId)
+        ps <- ps %>% filter(.data$databaseId %in% sources)
       } else {
         targetId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$target]
         comparatorId <- exposureOfInterest$exposureId[exposureOfInterest$exposureName == input$comparator]
@@ -593,6 +603,12 @@ shinyServer(function(input, output, session) {
                                                   })
 
   balancePlot <- reactive({
+    row <- selectedRow()
+    if (row$databaseId %in% metaAnalysisDbIds) {
+      cat("How did I get here?")
+      return(NULL)
+    }
+
     bal <- balance()
     if (is.null(bal) || nrow(bal) == 0) {
       return(NULL)
@@ -675,12 +691,17 @@ shinyServer(function(input, output, session) {
     if (is.null(row) || !(row$databaseId %in% metaAnalysisDbIds)) {
       return(NULL)
     } else {
+      # Filter data sources
+      sources <- c(strsplit(row$sources, split = ";")[[1]], row$databaseId)
+
       balanceSummary <- getCovariateBalanceSummary(connection = connection,
                                                    targetId = row$targetId,
                                                    comparatorId = row$comparatorId,
-                                                   analysisId = row$analysisId,
+                                                   analysisId = mapAnalysisIdForBalance(row$analysisId),
+                                                   databaseIds = sources,
                                                    beforeLabel = paste("Before", row$psStrategy),
                                                    afterLabel = paste("After", row$psStrategy))
+
       plot <- plotCovariateBalanceSummary(balanceSummary,
                                           threshold = 0.1,
                                           beforeLabel = paste("Before", row$psStrategy),
@@ -846,11 +867,15 @@ shinyServer(function(input, output, session) {
     if (is.null(row) || !(row$databaseId %in% metaAnalysisDbIds)) {
       return(NULL)
     } else {
+      # Filter data sources
+      sources <- c(strsplit(row$sources, split = ";")[[1]], row$databaseId)
+
       results <- getMainResults(connection = connection,
                                 targetIds = row$targetId,
                                 comparatorIds = row$comparatorId,
                                 outcomeIds = row$outcomeId,
-                                analysisIds = row$analysisId)
+                                analysisIds = row$analysisId,
+                                databaseIds = sources)
       plot <- plotForest(results)
       return(plot)
     }

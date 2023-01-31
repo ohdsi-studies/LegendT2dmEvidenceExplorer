@@ -1,10 +1,10 @@
 Package: LegendT2dmEvidenceExplorer
 Type: Package
 Title: LEGEND-T2DM Evidence Explorer
-Version: 0.2.1
+Version: 0.3.0
 Author: Marc A. Suchard [aut, cre],
     Martijn J. Schuemie [aut]
-Maintainer: The package maintainer <yourself@somewhere.net>
+Maintainer: Marc A. Suchard <msuchard@ucla.edu>
 Description: Evidence explorer shinyApp for the Large-Scale Evidence Generation and Evaluation
     across a Network of Databases for Type 2 Diabetes Mellitus
 License: Apache License 2.0
