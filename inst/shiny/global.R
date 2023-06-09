@@ -65,22 +65,34 @@ defaultPort <- 5432
 defaultUser <- Sys.getenv("shinydbUser")
 defaultPassword <- Sys.getenv("shinydbPw")
 defaultResultsSchema <- getConfiguration("resultsSchema")
-defaultBlind <- TRUE
+defaultBlind <- FALSE
 defaultHeaderText <- getConfiguration("headerText")
 
 if (!exists("shinySettings")) { # Running on ShinyDeploy server
   writeLines("Using default settings")
   databaseMode <- defaultDatabaseMode & defaultServer != ""
   if (databaseMode) {
-    connectionPool <- pool::dbPool(
-      drv = DatabaseConnector::DatabaseConnectorDriver(),
+    # connectionPool <- pool::dbPool(
+    #  drv = DatabaseConnector::DatabaseConnectorDriver(),
+    #  dbms = "postgresql",
+    #  server = paste(defaultServer, defaultDatabase, sep = "/"),
+    #  port = defaultPort,
+    #  user = defaultUser,
+    #  password = defaultPassword
+    #)
+    connectionDetails <- DatabaseConnector::createConnectionDetails(
       dbms = "postgresql",
-      server = paste(defaultServer, defaultDatabase, sep = "/"),
+      server = paste(defaultServer,
+                     defaultDatabase,
+                     sep = "/"),
       port = defaultPort,
       user = defaultUser,
-      password = defaultPassword
-    )
+      password = defaultPassword)
+    connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
     resultsDatabaseSchema <- defaultResultsSchema
+    
+    sql <- paste0("SET search_path TO ", resultsDatabaseSchema, ";")
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
   } else {
     dataFolder <- defaultDataFolder
   }
@@ -123,7 +135,7 @@ if (databaseMode) {
   #     pool::poolClose(connectionPool)
   #   }
   # })
-
+  
   exposureOfInterest <- getExposures(connection)
   outcomeOfInterest <- getOutcomes(connection)
   database <- getDatabases(connection)
