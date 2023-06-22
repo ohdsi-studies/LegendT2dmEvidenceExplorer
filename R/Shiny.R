@@ -63,15 +63,16 @@ launchEvidenceExplorer <- function(cohorts = "class",
                                    aboutText = NULL,
                                    runOverNetwork = FALSE,
                                    port = 80,
-                                   launch.browser = FALSE) {
+                                   launch.browser = FALSE,
+                                   mainMask = "") {
 
   appDir = system.file("shiny", package = "LegendT2dmEvidenceExplorer")
 
   if (cohorts == "class") {
-    headerText <- "LEGEND-T2DM Class Evidence"
+    headerText <- "LEGEND-T2DM Class Evidence Explorer"
     resultsDatabaseSchema <- "legendt2dm_class_results"
   } else if (cohorts == "drug") {
-    headerText = "LEGEND-T2DM Drug Evidence"
+    headerText <- "LEGEND-T2DM Drug Evidence Explorer"
     resultsDatabaseSchema <- "legendt2dm_drug_results"
   } else {
     stop("Unknown cohorts")
@@ -107,6 +108,7 @@ launchEvidenceExplorer <- function(cohorts = "class",
     dataFile = dataFile,
     aboutText = aboutText,
     headerText = headerText,
+    mainMask = mainMask,
     blind = blind
   )
   .GlobalEnv$shinySettings <- shinySettings
