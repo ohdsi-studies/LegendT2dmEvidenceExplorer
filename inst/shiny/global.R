@@ -65,27 +65,41 @@ defaultPort <- 5432
 defaultUser <- Sys.getenv("shinydbUser")
 defaultPassword <- Sys.getenv("shinydbPw")
 defaultResultsSchema <- getConfiguration("resultsSchema")
-defaultBlind <- TRUE
+defaultBlind <- FALSE
 defaultHeaderText <- getConfiguration("headerText")
+defaultMainMask <- getConfiguration("mainMask")
 
 if (!exists("shinySettings")) { # Running on ShinyDeploy server
   writeLines("Using default settings")
   databaseMode <- defaultDatabaseMode & defaultServer != ""
   if (databaseMode) {
-    connectionPool <- pool::dbPool(
-      drv = DatabaseConnector::DatabaseConnectorDriver(),
+    # connectionPool <- pool::dbPool(
+    #  drv = DatabaseConnector::DatabaseConnectorDriver(),
+    #  dbms = "postgresql",
+    #  server = paste(defaultServer, defaultDatabase, sep = "/"),
+    #  port = defaultPort,
+    #  user = defaultUser,
+    #  password = defaultPassword
+    #)
+    connectionDetails <- DatabaseConnector::createConnectionDetails(
       dbms = "postgresql",
-      server = paste(defaultServer, defaultDatabase, sep = "/"),
+      server = paste(defaultServer,
+                     defaultDatabase,
+                     sep = "/"),
       port = defaultPort,
       user = defaultUser,
-      password = defaultPassword
-    )
+      password = defaultPassword)
+    connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
     resultsDatabaseSchema <- defaultResultsSchema
+
+    sql <- paste0("SET search_path TO ", resultsDatabaseSchema, ";")
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
   } else {
     dataFolder <- defaultDataFolder
   }
   headerText <- defaultHeaderText
   blind <- defaultBlind
+  mainMask <- defaultMainMask
 } else {
   writeLines("Using user-provided settings")
   databaseMode <- !is.null(shinySettings$connectionDetails)
@@ -110,6 +124,7 @@ if (!exists("shinySettings")) { # Running on ShinyDeploy server
     dataFolder <- shinySettings$dataFolder
   }
   headerText <- shinySettings$headerText
+  mainMask <- shinySettings$mainMask
   blind <- shinySettings$blind
 }
 
