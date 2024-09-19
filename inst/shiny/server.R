@@ -73,7 +73,7 @@ shinyServer(function(input, output, session) {
     }
 
     if (mainMask != "") {
-      subsetIds <- subsetIds[grep(mainMask, subsetIds)]
+      subsetIds <- subsetIds[grep(mainMask, subsetIds)] # TODO should apply this to `exposureOfInterest` when read
     }
 
     subsetNames <- exposureOfInterest$exposureName[exposureOfInterest$exposureId %in% subsetIds]
@@ -167,13 +167,13 @@ shinyServer(function(input, output, session) {
     propensityScoreValues <- propensityScoreMask %>% filter(.data$label %in% input$propensityScore) %>% pull(.data$index)
     timeAtRiskValues <- timeAtRiskMask %>% filter(.data$label %in% input$timeAtRisk) %>% pull(.data$multiplier)
 
-    message("timeAtRiskValues: ", paste(timeAtRiskValues))
-    message("propensityScoreValues: ", paste(propensityScoreValues))
+    message("timeAtRiskValues: ", paste(timeAtRiskValues, collapse = " "))
+    message("propensityScoreValues: ", paste(propensityScoreValues, collapse = " "))
 
     analysisIds <- c(outer(propensityScoreValues, timeAtRiskValues,
                            function(x, y) { x + 3 * y }))
 
-    message("analysisIds: ", paste(analysisIds))
+    message("analysisIds: ", paste(analysisIds, collapse = " "))
 
     analysisIds <- cohortMethodAnalysis$analysisId[cohortMethodAnalysis$analysisId %in% analysisIds]
 

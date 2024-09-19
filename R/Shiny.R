@@ -64,7 +64,8 @@ launchEvidenceExplorer <- function(cohorts = "class",
                                    runOverNetwork = FALSE,
                                    port = 80,
                                    launch.browser = FALSE,
-                                   mainMask = "") {
+                                   mainMask = "",
+                                   includeLagged = FALSE) {
 
   appDir = system.file("shiny", package = "LegendT2dmEvidenceExplorer")
 
@@ -109,6 +110,7 @@ launchEvidenceExplorer <- function(cohorts = "class",
     aboutText = aboutText,
     headerText = headerText,
     mainMask = mainMask,
+    includeLagged = includeLagged,
     blind = blind
   )
   .GlobalEnv$shinySettings <- shinySettings

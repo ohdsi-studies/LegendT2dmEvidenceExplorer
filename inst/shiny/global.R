@@ -14,6 +14,15 @@ getConfiguration <- function(label) {
   }
 }
 
+getBooleanConfiguration <- function(label) {
+  sourceFile <- "config.json"
+  if (file.exists(sourceFile)) {
+    tolower(RJSONIO::fromJSON(readChar(sourceFile, file.info(sourceFile)$size))[[label]]) == "true"
+  } else {
+    FALSE
+  }
+}
+
 makeOt2 <- function(id) {
   string <- as.character(id)
   string <- paste0(substring(string, 1, 2),
@@ -38,6 +47,11 @@ timeAtRiskMask <- tibble::tibble(
 )
 
 mapAnalysisIdForBalance <- function(analysisId) {
+
+  if (analysisId > 100) {
+    analysisId <- analysisId - 100
+  }
+
   map <- c(1,5,6,
            4,5,6,
            7,5,6,
@@ -68,6 +82,7 @@ defaultResultsSchema <- getConfiguration("resultsSchema")
 defaultBlind <- FALSE
 defaultHeaderText <- getConfiguration("headerText")
 defaultMainMask <- getConfiguration("mainMask")
+defaultIncludeLagged <- getBooleanConfiguration("includeLagged")
 
 if (!exists("shinySettings")) { # Running on ShinyDeploy server
   writeLines("Using default settings")
@@ -100,6 +115,7 @@ if (!exists("shinySettings")) { # Running on ShinyDeploy server
   headerText <- defaultHeaderText
   blind <- defaultBlind
   mainMask <- defaultMainMask
+  includeLagged <- defaultIncludeLagged
 } else {
   writeLines("Using user-provided settings")
   databaseMode <- !is.null(shinySettings$connectionDetails)
@@ -126,7 +142,10 @@ if (!exists("shinySettings")) { # Running on ShinyDeploy server
   headerText <- shinySettings$headerText
   mainMask <- shinySettings$mainMask
   blind <- shinySettings$blind
+  includeLagged <- shinySettings$includeLagged
 }
+
+
 
 # positiveControlOutcome <- NULL
 
@@ -138,6 +157,8 @@ if (databaseMode) {
   #     pool::poolClose(connectionPool)
   #   }
   # })
+
+  # TODO subset the following by `mainMask`
 
   exposureOfInterest <- getExposures(connection)
   outcomeOfInterest <- getOutcomes(connection)
@@ -236,4 +257,10 @@ if (databaseMode) {
   tcos <- unique(cohortMethodResult[, c("targetId", "comparatorId", "outcomeId")])
   tcos <- tcos[tcos$outcomeId %in% outcomeOfInterest$outcomeId, ]
   metaAnalysisDbIds <- database$databaseId[database$isMetaAnalysis == 1]
+}
+
+if (includeLagged) {
+  timeAtRiskMask <- tibble::tibble(
+    label = c("Intent-to-treat (ITT)", "On-treatment (OT)", "OT and censor at +agent", "Lagged ITT"),
+    multiplier = c(1, 0, 2, 103 / 3))
 }
